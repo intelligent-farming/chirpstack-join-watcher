@@ -1,4 +1,4 @@
-# @intelligent-farming/chirpstack-join-watcher
+# @intelligentfarming/chirpstack-join-watcher
 
 Listen to ChirpStack join requests and identify the likely vendor of an
 unknown device from its DevEUI's IEEE OUI (with optional JoinEUI overrides).
@@ -319,7 +319,7 @@ A single vendor entry in a [JoinEuiMap](#joineuimap-2).
 
 > `optional` **id?**: `string`
 
-Vendor slug — matches the `vendor.id` from `@intelligent-farming/ttn-to-chirpstack` when known.
+Vendor slug — matches the `vendor.id` from `@intelligentfarming/ttn-to-chirpstack` when known.
 
 ##### name
 

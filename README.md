@@ -1,4 +1,4 @@
-# @intelligent-farming/chirpstack-join-watcher
+# @intelligentfarming/chirpstack-join-watcher
 
 Listens to ChirpStack's MQTT gateway uplinks, picks out LoRaWAN JoinRequests, and tells you what vendor each unknown device probably came from. Useful when a device shows up that isn't provisioned yet and you want to know who made it before deciding how to onboard it.
 
@@ -9,10 +9,10 @@ Full API reference: [docs/api-doc.md](docs/api-doc.md). Regenerate with `npm run
 ## Install
 
 ```sh
-npm install @intelligent-farming/chirpstack-join-watcher
+npm install @intelligentfarming/chirpstack-join-watcher
 ```
 
-Written in TypeScript, compiled to CommonJS, ships type definitions and runtime-accessible string enums (same pattern as `@intelligent-farming/ttn-to-chirpstack`).
+Written in TypeScript, compiled to CommonJS, ships type definitions and runtime-accessible string enums (same pattern as `@intelligentfarming/ttn-to-chirpstack`).
 
 ## Usage
 
@@ -20,7 +20,7 @@ Written in TypeScript, compiled to CommonJS, ships type definitions and runtime-
 import {
   watch, analyze, handleGatewayUplink, updateOuis, cachePath,
   VendorSource, MType,
-} from '@intelligent-farming/chirpstack-join-watcher';
+} from '@intelligentfarming/chirpstack-join-watcher';
 
 // Connect to ChirpStack and listen for join requests on every gateway.
 const w = watch({ url: 'mqtt://localhost:1883' });

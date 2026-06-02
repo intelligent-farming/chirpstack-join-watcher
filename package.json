@@ -1,26 +1,25 @@
 {
-  "name": "@intelligent-farming/chirpstack-join-watcher",
+  "name": "@intelligentfarming/chirpstack-join-watcher",
   "version": "0.1.0",
   "description": "Listen to ChirpStack join requests and identify the likely vendor of unknown devices from the DevEUI OUI (and optional JoinEUI override map).",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "license": "MIT",
   "files": [
-    "dist/",
-    "data/"
+    "dist/"
   ],
   "engines": {
-    "node": ">=14"
+    "node": ">=18"
   },
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "npm run build && node test/smoke.js",
-    "docs": "typedoc && mv docs/README.md docs/api-doc.md",
-    "build-ouis": "node scripts/build-ouis.js"
+    "test": "npm run build && node --test --test-reporter=spec test/smoke.js",
+    "docs": "typedoc && mv docs/README.md docs/api-doc.md"
   },
   "dependencies": {
-    "mqtt": "^5.5.0"
+    "mqtt": "^5.5.0",
+    "@intelligentfarming/oui-registry": "file:../oui-registry"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

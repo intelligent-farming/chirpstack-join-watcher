@@ -13,10 +13,10 @@
 
 import { EventEmitter } from 'events';
 import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import https from 'https';
 import mqtt, { MqttClient } from 'mqtt';
+import { loadBundled as loadOuis } from '@intelligentfarming/oui-registry';
+
+export { cachePath, updateOuis, parseOuiCsv } from '@intelligentfarming/oui-registry';
 
 /* -------------------------------------------------------------------------- */
 /* Enums                                                                       */
@@ -48,7 +48,7 @@ export enum MType {
 
 /** A single vendor entry in a {@link JoinEuiMap}. */
 export interface VendorEntry {
-  /** Vendor slug — matches the `vendor.id` from `@intelligent-farming/ttn-to-chirpstack` when known. */
+  /** Vendor slug — matches the `vendor.id` from `@intelligentfarming/ttn-to-chirpstack` when known. */
   id?: string;
   /** Human-readable vendor name. */
   name: string;
@@ -133,102 +133,6 @@ export interface JoinWatcher {
   /** Disconnect from the broker. Resolves when the underlying client is closed. */
   stop(): Promise<void>;
 }
-
-/* -------------------------------------------------------------------------- */
-/* OUI cache resolution (XDG, env-overridable; same shape as ttn-to-chirpstack) */
-/* -------------------------------------------------------------------------- */
-
-const BUNDLED_OUIS = path.join(__dirname, '..', 'data', 'ouis.json');
-const CACHE_ROOT = process.env.JOIN_WATCHER_CACHE
-  || path.join(process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), 'chirpstack-join-watcher');
-const CACHED_OUIS = path.join(CACHE_ROOT, 'ouis.json');
-const OUI_CSV_URLS = [
-  'https://standards-oui.ieee.org/oui/oui.csv',     // MA-L (24-bit) — ~40k entries
-  'https://standards-oui.ieee.org/oui28/mam.csv',   // MA-M (28-bit) — narrower allocations
-  'https://standards-oui.ieee.org/oui36/oui36.csv', // MA-S (36-bit) — what LoRa Alliance vendors use
-];
-
-let _ouis: Record<string, string> | undefined;
-
-const loadOuis = (): Record<string, string> => {
-  if (_ouis) return _ouis;
-  const file = fs.existsSync(CACHED_OUIS) ? CACHED_OUIS : BUNDLED_OUIS;
-  _ouis = JSON.parse(fs.readFileSync(file, 'utf8'));
-  return _ouis!;
-};
-
-/** Where {@link updateOuis} writes the refreshed registry. */
-export const cachePath = (): string => CACHED_OUIS;
-
-/**
- * Download the latest IEEE OUI CSV, convert it to the compact JSON shape this
- * module uses (`{ "AABBCC": "Organization name" }`), and write it to the
- * cache. Subsequent {@link analyze} calls pick up the new data immediately.
- *
- * @returns The path that was written.
- */
-export const updateOuis = async (): Promise<string> => {
-  fs.mkdirSync(CACHE_ROOT, { recursive: true });
-  const merged: Record<string, string> = {};
-  for (const url of OUI_CSV_URLS) Object.assign(merged, parseOuiCsv(await fetchText(url)));
-  fs.writeFileSync(CACHED_OUIS, JSON.stringify(merged));
-  _ouis = merged;
-  return CACHED_OUIS;
-};
-
-const fetchText = (url: string): Promise<string> => new Promise((resolve, reject) => {
-  https.get(url, res => {
-    if (res.statusCode !== 200) return reject(new Error(`${url} → HTTP ${res.statusCode}`));
-    const chunks: Buffer[] = [];
-    res.on('data', c => chunks.push(c));
-    res.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    res.on('error', reject);
-  }).on('error', reject);
-});
-
-/**
- * Parse the IEEE oui.csv into a flat `{ OUI: organization }` map. Exported
- * because the build-time `scripts/build-ouis.js` uses it; not normally
- * needed at runtime.
- *
- * @internal
- */
-export const parseOuiCsv = (csv: string): Record<string, string> => {
-  const out: Record<string, string> = {};
-  const lines = csv.split(/\r?\n/);
-  // Header: Registry,Assignment,Organization Name,Organization Address
-  // MA-L assignments are 6 hex chars (24-bit), MA-M are 7 (28-bit), MA-S are 9 (36-bit).
-  // Keep all three so the longest-match lookup can find sub-allocated vendors —
-  // critical for LoRaWAN, where most devices use 36-bit blocks under
-  // LoRa Alliance's MA-S range at 70-B3-D5.
-  for (let i = 1; i < lines.length; i++) {
-    const line = lines[i];
-    if (!line) continue;
-    const fields = splitCsv(line);
-    if (fields.length < 3) continue;
-    const assignment = fields[1].trim().toUpperCase();
-    const name = fields[2].trim();
-    if ((assignment.length === 6 || assignment.length === 7 || assignment.length === 9) && name) {
-      out[assignment] = name;
-    }
-  }
-  return out;
-};
-
-const splitCsv = (line: string): string[] => {
-  const out: string[] = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"' && line[i + 1] === '"' && inQuotes) { cur += '"'; i++; }
-    else if (ch === '"') inQuotes = !inQuotes;
-    else if (ch === ',' && !inQuotes) { out.push(cur); cur = ''; }
-    else cur += ch;
-  }
-  out.push(cur);
-  return out;
-};
 
 /* -------------------------------------------------------------------------- */
 /* LoRaWAN PHYPayload parsing                                                  */
