@@ -1,10 +1,18 @@
 {
-  "name": "@intelligentfarming/chirpstack-join-watcher",
+  "name": "@intelligent-farming/chirpstack-join-watcher",
   "version": "0.1.0",
   "description": "Listen to ChirpStack join requests and identify the likely vendor of unknown devices from the DevEUI OUI (and optional JoinEUI override map).",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/intelligent-farming/chirpstack-join-watcher.git"
+  },
+  "homepage": "https://github.com/intelligent-farming/chirpstack-join-watcher#readme",
+  "bugs": {
+    "url": "https://github.com/intelligent-farming/chirpstack-join-watcher/issues"
+  },
   "files": [
     "dist/"
   ],
@@ -19,7 +27,7 @@
   },
   "dependencies": {
     "mqtt": "^5.5.0",
-    "@intelligentfarming/oui-registry": "file:../oui-registry"
+    "@intelligent-farming/oui-registry": "^0.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

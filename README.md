@@ -1,18 +1,13 @@
-# @intelligentfarming/chirpstack-join-watcher
+# @intelligent-farming/chirpstack-join-watcher
 
 Listens to ChirpStack's MQTT gateway uplinks, picks out LoRaWAN JoinRequests, and tells you what vendor each unknown device probably came from. Useful when a device shows up that isn't provisioned yet and you want to know who made it before deciding how to onboard it.
 
-Vendor identification uses the IEEE OUI registry against the DevEUI's top bytes (MA-L 24-bit, MA-M 28-bit, and MA-S 36-bit allocations — the last one is what most LoRaWAN device makers actually use). You can also supply a `join-euis.json`-style override map keyed by JoinEUI, which wins over the OUI lookup when it matches.
-
-Full API reference: [docs/api-doc.md](docs/api-doc.md). Regenerate with `npm run docs`.
 
 ## Install
 
 ```sh
-npm install @intelligentfarming/chirpstack-join-watcher
+npm install @intelligent-farming/chirpstack-join-watcher
 ```
-
-Written in TypeScript, compiled to CommonJS, ships type definitions and runtime-accessible string enums (same pattern as `@intelligentfarming/ttn-to-chirpstack`).
 
 ## Usage
 
@@ -20,7 +15,7 @@ Written in TypeScript, compiled to CommonJS, ships type definitions and runtime-
 import {
   watch, analyze, handleGatewayUplink, updateOuis, cachePath,
   VendorSource, MType,
-} from '@intelligentfarming/chirpstack-join-watcher';
+} from '@intelligent-farming/chirpstack-join-watcher';
 
 // Connect to ChirpStack and listen for join requests on every gateway.
 const w = watch({ url: 'mqtt://localhost:1883' });
@@ -83,10 +78,4 @@ To bake a new snapshot into the package itself (maintainer task):
 
 ```sh
 npm run build-ouis    # downloads from IEEE and writes data/ouis.json
-```
-
-## Tests
-
-```sh
-npm test
 ```

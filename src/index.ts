@@ -14,9 +14,14 @@
 import { EventEmitter } from 'events';
 import fs from 'fs';
 import mqtt, { MqttClient } from 'mqtt';
-import { loadBundled as loadOuis } from '@intelligentfarming/oui-registry';
+import {
+  loadBundled as loadOuis,
+  type OuiRegistry,
+} from '@intelligent-farming/oui-registry';
 
-export { cachePath, updateOuis, parseOuiCsv } from '@intelligentfarming/oui-registry';
+export { cachePath, updateOuis, parseOuiCsv } from '@intelligent-farming/oui-registry';
+/** Re-export so browser callers don't have to depend on `@intelligent-farming/oui-registry` directly. */
+export type { OuiRegistry };
 
 /* -------------------------------------------------------------------------- */
 /* Enums                                                                       */
@@ -48,7 +53,7 @@ export enum MType {
 
 /** A single vendor entry in a {@link JoinEuiMap}. */
 export interface VendorEntry {
-  /** Vendor slug — matches the `vendor.id` from `@intelligentfarming/ttn-to-chirpstack` when known. */
+  /** Vendor slug — matches the `vendor.id` from `@intelligent-farming/ttn-to-chirpstack` when known. */
   id?: string;
   /** Human-readable vendor name. */
   name: string;
@@ -91,8 +96,25 @@ export interface JoinCandidate extends JoinRequest {
 export interface AnalyzeOptions {
   /** Inline JoinEUI → vendor map. Wins over `joinEuiMapPath` and OUI matching. */
   joinEuiMap?: JoinEuiMap;
-  /** Path to a JSON file containing a {@link JoinEuiMap}. Read on first analyze() call and cached. */
+  /**
+   * Path to a JSON file containing a {@link JoinEuiMap}. Read on first
+   * analyze() call and cached. **Node only** — uses `fs`. In browsers, pass
+   * an inline {@link joinEuiMap} instead.
+   */
   joinEuiMapPath?: string;
+  /**
+   * IEEE OUI registry for vendor identification. When provided, the lookup
+   * runs against this map directly — browser-safe. When omitted, falls back
+   * to the bundled snapshot via `fs` from `@intelligent-farming/oui-registry`
+   * (Node only).
+   *
+   * Browser usage:
+   * ```ts
+   * import ouis from '@intelligent-farming/oui-registry/data/ouis.json';
+   * watch({ url, ouiRegistry: ouis });
+   * ```
+   */
+  ouiRegistry?: OuiRegistry;
 }
 
 /** Options for {@link watch}. Extends {@link AnalyzeOptions}. */
@@ -205,16 +227,20 @@ export const analyze = (phyPayload: string | Buffer, opts: AnalyzeOptions = {}):
     const v = map[req.joinEui];
     return { ...req, vendor: { id: v.id, name: v.name, source: VendorSource.JOIN_EUI } };
   }
-  const orgName = lookupOui(req.devEui);
+  const orgName = lookupOui(req.devEui, opts.ouiRegistry);
   return {
     ...req,
     vendor: orgName ? { name: orgName, source: VendorSource.OUI } : null,
   };
 };
 
-/** Try the longest IEEE registry first: MA-S (36-bit) → MA-M (28-bit) → MA-L (24-bit). */
-const lookupOui = (devEui: string): string | undefined => {
-  const map = loadOuis();
+/**
+ * Try the longest IEEE registry first: MA-S (36-bit) → MA-M (28-bit) → MA-L
+ * (24-bit). When `registry` is provided, runs against it directly; otherwise
+ * loads the bundled snapshot via `fs` (Node only).
+ */
+const lookupOui = (devEui: string, registry?: OuiRegistry): string | undefined => {
+  const map = registry ?? loadOuis();
   return map[devEui.slice(0, 9)] ?? map[devEui.slice(0, 7)] ?? map[devEui.slice(0, 6)];
 };
 

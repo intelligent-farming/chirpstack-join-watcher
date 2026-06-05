@@ -203,6 +203,49 @@ describe('handleGatewayUplink — ChirpStack MQTT integration', () => {
   });
 });
 
+describe('OuiRegistry injection (browser-friendly path)', () => {
+  // Minimal injected registry — exercises the browser code path without
+  // touching the bundled snapshot loaded via fs.
+  const REG = {
+    A84041: 'Dragino Technology Co., Limited',
+    '24E124': 'Xiamen Milesight IoT Co., Ltd.',
+  };
+
+  test('analyze() with injected registry returns vendor from the injected map', () => {
+    const result = analyze(PHY, { ouiRegistry: REG });
+    assert.equal(result.vendor.source, VendorSource.OUI);
+    assert.match(result.vendor.name, /Dragino/);
+  });
+
+  test('analyze() with an empty injected registry returns null vendor', () => {
+    const result = analyze(PHY, { ouiRegistry: {} });
+    assert.equal(result.vendor, null);
+  });
+
+  test('JoinEUI map still takes precedence over injected registry', () => {
+    const result = analyze(PHY, {
+      ouiRegistry: REG,
+      joinEuiMap: { [FIX.ttnJoinEui]: { id: 'dragino', name: 'Dragino (from map)' } },
+    });
+    assert.equal(result.vendor.source, VendorSource.JOIN_EUI);
+    assert.equal(result.vendor.name, 'Dragino (from map)');
+  });
+
+  test('handleGatewayUplink threads ouiRegistry through to analyze()', () => {
+    const topic = 'gateway/gw-x/event/up';
+    const payload = JSON.stringify({ phyPayload: PHY.toString('base64') });
+    const event = handleGatewayUplink(topic, payload, { ouiRegistry: REG });
+    assert.ok(event);
+    assert.match(event.candidate.vendor.name, /Dragino/);
+  });
+
+  test('omitting ouiRegistry falls back to bundled snapshot (Node-only path)', () => {
+    const result = analyze(PHY);
+    assert.equal(result.vendor.source, VendorSource.OUI);
+    assert.match(result.vendor.name, /Dragino/);
+  });
+});
+
 describe('public API surface', () => {
   test('watch is exported as a function', () => {
     assert.equal(typeof watch, 'function');
